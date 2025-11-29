@@ -1,31 +1,251 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-  <meta charset="UTF-8" />
-  <title>Little Kid Quiz</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quiz Mario - Assistente Pixel</title>
 
-  <!-- React + ReactDOM -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Babel (para aceitar JSX) -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- React -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <!-- Tailwind (visuais) -->
-  <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <style>
-    body {
-      background: linear-gradient(#6ec6ff, #9bd6ff, #c1e7ff);
-      font-family: Arial, sans-serif;
-    }
-  </style>
+    <!-- Tone.js (sons) -->
+    <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        .pixel-font {
+            font-family: 'Press Start 2P', sans-serif;
+        }
+
+        .assistente-fixed {
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            z-index: 99999;
+            width: 140px;
+            height: 160px;
+            image-rendering: pixelated;
+        }
+
+        @keyframes walk {
+            0% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-4px);
+            }
+
+            100% {
+                transform: translateY(0);
+            }
+        }
+    </style>
 </head>
 
-<body>
-  <div id="root"></div>
+<body class="bg-gray-900">
 
-  <!-- SEU game.js -->
-  <script type="text/babel" src="game.js"></script>
+    <div id="root"></div>
+
+    <!-- Assistente fixo na tela -->
+    <div id="assistente-container" class="assistente-fixed flex items-end justify-center">
+        <img id="assistente-img" src="assistente_0.png" style="width: 120px;" />
+    </div>
+
+    <script type="text/babel">
+
+        const { useState, useEffect, useRef } = React;
+
+        function MarioQuizGame() {
+
+            // ===== ESTADOS =====
+            const [screen, setScreen] = useState("menu");
+            const [playerName, setPlayerName] = useState("Jogador");
+            const [question, setQuestion] = useState(null);
+            const [selected, setSelected] = useState(null);
+            const [score, setScore] = useState(0);
+            const [lives, setLives] = useState(3);
+
+            const [marioX, setMarioX] = useState(10);
+
+            // EXPRESSÃO DO ASSISTENTE
+            const [assistantMood, setAssistantMood] = useState("neutral");
+
+            // ======= Função para trocar expressão ========
+            const updateAssistantMood = (mood) => {
+                setAssistantMood(mood);
+                const img = document.getElementById("assistente-img");
+
+                if (mood === "neutral") img.src = "assistente_0.png";
+                if (mood === "happy") img.src = "assistente_1.png";
+                if (mood === "sad") img.src = "assistente_2.png";
+            };
+
+            // ======= GERAÇÃO DE PERGUNTA FAKE (sem API) ========
+            const loadQuestion = () => {
+                updateAssistantMood("neutral");
+
+                setQuestion({
+                    pergunta: "Qual é o plural de 'coração'?",
+                    alternativas: {
+                        A: "Corações",
+                        B: "Coraçãos",
+                        C: "Coraçõesz",
+                        D: "Coraçãoses"
+                    },
+                    correta: "A",
+                    explicacao: "O plural correto segue a regra de acrescentar '-ões'."
+                });
+
+                setSelected(null);
+            };
+
+            // ========= Ao iniciar =========
+            useEffect(() => {
+                loadQuestion();
+            }, []);
+
+            // ========= Conferir resposta =========
+            const check = () => {
+                if (!selected) return alert("Escolha uma alternativa!");
+
+                if (selected === question.correta) {
+                    setScore(score + 10);
+                    updateAssistantMood("happy");
+                    setMarioX(marioX + 10);
+                } else {
+                    setLives(lives - 1);
+                    updateAssistantMood("sad");
+                }
+
+                setTimeout(() => {
+                    if (lives - (selected !== question.correta ? 1 : 0) <= 0) {
+                        setScreen("gameover");
+                        return;
+                    }
+
+                    loadQuestion();
+                }, 1200);
+            };
+
+            // ========= TELAS =========
+
+            if (screen === "menu") {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center text-white">
+                        <h1 className="pixel-font text-4xl mb-8">QUIZ DO MARIO</h1>
+
+                        <button
+                            className="bg-red-500 px-8 py-4 rounded-lg text-2xl"
+                            onClick={() => setScreen("quiz")}
+                        >
+                            INICIAR
+                        </button>
+                    </div>
+                );
+            }
+
+            if (screen === "quiz") {
+
+                return (
+                    <div className="p-6 text-white">
+
+                        <div className="flex justify-between text-xl mb-4">
+                            <div>❤️ Vidas: {lives}</div>
+                            <div>⭐ Pontos: {score}</div>
+                        </div>
+
+                        {/* CORREDOR (substituído por assistente pixel) */}
+                        <div className="relative bg-blue-300 h-32 rounded-lg mb-4 overflow-hidden border-4 border-blue-700">
+
+                            <img
+                                src="assistente_0.png"
+                                style={{
+                                    width: "50px",
+                                    position: "absolute",
+                                    bottom: "0px",
+                                    left: `${marioX}%`,
+                                    imageRendering: "pixelated",
+                                    animation: marioX < 85 ? "walk 0.4s steps(2) infinite" : "none"
+                                }}
+                            />
+                        </div>
+
+                        {/* PERGUNTA */}
+                        <div className="bg-yellow-400 border-8 border-yellow-700 rounded-lg p-4 mb-4 text-black">
+                            <h2 className="pixel-font text-2xl mb-2">PERGUNTA</h2>
+                            <p className="text-xl">{question.pergunta}</p>
+                        </div>
+
+                        {/* ALTERNATIVAS */}
+                        <div className="space-y-3">
+
+                            {Object.entries(question.alternativas).map(([key, value]) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setSelected(key)}
+                                    className={`w-full p-4 rounded-lg border-4 font-bold text-lg 
+                                    ${selected === key ? "bg-red-500 border-red-700 text-white"
+                                        : "bg-orange-400 border-orange-600 text-black"}`}
+                                >
+                                    {key}) {value}
+                                </button>
+                            ))}
+
+                        </div>
+
+                        {/* BOTÃO RESPOSTA */}
+                        <button
+                            onClick={check}
+                            className="w-full bg-green-500 text-black font-bold mt-6 py-4 rounded-lg text-2xl border-4 border-green-800"
+                        >
+                            RESPONDER
+                        </button>
+
+                    </div>
+                );
+            }
+
+            if (screen === "gameover") {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center text-white">
+
+                        <h1 className="pixel-font text-4xl mb-4">GAME OVER</h1>
+
+                        <p className="text-3xl mb-6">Pontuação final: {score}</p>
+
+                        <button
+                            className="bg-green-500 px-8 py-4 rounded-lg text-2xl"
+                            onClick={() => {
+                                setLives(3);
+                                setScore(0);
+                                setMarioX(10);
+                                loadQuestion();
+                                setScreen("quiz");
+                            }}
+                        >
+                            JOGAR NOVAMENTE
+                        </button>
+
+                    </div>
+                );
+            }
+
+            return null;
+        }
+
+        ReactDOM.createRoot(document.getElementById("root")).render(<MarioQuizGame />);
+
+    </script>
+
 </body>
+
 </html>
