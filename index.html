@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quiz Mario - Assistente Pixel</title>
+    <title>Mario Quiz - Marcel</title>
 
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,23 +16,43 @@
     <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Tone.js (sons) -->
+    <!-- Tone.js -->
     <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
 
+    <!-- Fonte Pixel -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
         .pixel-font {
-            font-family: 'Press Start 2P', sans-serif;
+            font-family: 'Press Start 2P', monospace;
         }
 
-        .assistente-fixed {
-            position: fixed;
-            bottom: 15px;
-            right: 15px;
-            z-index: 99999;
-            width: 140px;
-            height: 160px;
-            image-rendering: pixelated;
+        .iris-out {
+            animation: irisOut 0.6s ease-in-out forwards;
+        }
+
+        .iris-in {
+            animation: irisIn 0.6s ease-in-out forwards;
+        }
+
+        @keyframes irisOut {
+            from {
+                clip-path: circle(150% at 50% 50%);
+            }
+
+            to {
+                clip-path: circle(0% at 50% 50%);
+            }
+        }
+
+        @keyframes irisIn {
+            from {
+                clip-path: circle(0% at 50% 50%);
+            }
+
+            to {
+                clip-path: circle(150% at 50% 50%);
+            }
         }
 
         @keyframes walk {
@@ -48,50 +68,391 @@
                 transform: translateY(0);
             }
         }
+
+        .assistente-fixo {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 99999;
+            width: 150px;
+            height: 180px;
+            image-rendering: pixelated;
+        }
     </style>
 </head>
 
-<body class="bg-gray-900">
+<body class="bg-black">
 
     <div id="root"></div>
 
-    <!-- Assistente fixo na tela -->
-    <div id="assistente-container" class="assistente-fixed flex items-end justify-center">
-        <img id="assistente-img" src="assistente_0.png" style="width: 120px;" />
+    <!-- ASSISTENTE LATERAL -->
+    <div id="assistente-container" class="assistente-fixo flex items-end justify-center">
+        <img id="assistente-img" src="assistente_0.png" style="width:130px;" />
     </div>
 
     <script type="text/babel">
-
         const { useState, useEffect, useRef } = React;
 
         function MarioQuizGame() {
 
-            // ===== ESTADOS =====
-            const [screen, setScreen] = useState("menu");
-            const [playerName, setPlayerName] = useState("Jogador");
+            // ESTADO PRINCIPAL DE TELA
+            const [screen, setScreen] = useState("prestart");
+
+            // Estado do assistente
+            const [assistantMood, setAssistantMood] = useState("neutral");
+
+            // Memória de áudio
+            const [audioEnabled, setAudioEnabled] = useState(false);
+
+            // Synth principal
+            const synthRef = useRef(null);
+
+            // === Inicializar áudio ===
+            const enableAudio = async () => {
+                try {
+                    await Tone.start();
+
+                    if (!synthRef.current) {
+                        synthRef.current = new Tone.Synth({
+                            oscillator: { type: "square" },
+                            envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 0.2 }
+                        }).toDestination();
+                    }
+
+                    setAudioEnabled(true);
+                    console.log("Áudio destravado!");
+
+                } catch (e) {
+                    console.warn("Erro ao iniciar áudio", e);
+                }
+            };
+
+            // === Som de moeda ===
+            const playCoin = () => {
+                if (!audioEnabled || !synthRef.current) return;
+                const now = Tone.now();
+                synthRef.current.triggerAttackRelease("B5", "0.05", now);
+                synthRef.current.triggerAttackRelease("E6", "0.15", now + 0.05);
+            };
+
+            // === Trocar expressão do assistente ===
+            const updateMood = (m) => {
+                setAssistantMood(m);
+                const img = document.getElementById("assistente-img");
+
+                if (m === "neutral") img.src = "assistente_0.png";
+                if (m === "happy") img.src = "assistente_1.png";
+                if (m === "sad") img.src = "assistente_2.png";
+            };
+
+            // ==========================================================
+            // ====================   TELA PRESTART   ====================
+            // ==========================================================
+
+            if (screen === "prestart") {
+                return (
+                    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center iris-in">
+                        <h1 className="pixel-font text-4xl mb-10 animate-pulse">
+                            PRESS START
+                        </h1>
+
+                        <button
+                            onClick={async () => {
+                                await enableAudio();
+                                playCoin();
+
+                                updateMood("neutral");
+
+                                setScreen("splash");
+                            }}
+                            className="bg-white text-black font-bold px-10 py-5 rounded-lg text-2xl border-4 border-gray-400 hover:scale-110 transition-all pixel-font"
+                        >
+                            START
+                        </button>
+                    </div>
+                );
+            }
+            // ==========================================================
+            // ======================= TELA SPLASH =======================
+            // ==========================================================
+
+            if (screen === "splash") {
+                return (
+                    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center iris-out">
+                        <h1 className="pixel-font text-5xl mb-4">
+                            MARCEL DANCINI
+                        </h1>
+                        <p className="pixel-font text-2xl mt-4">Presents</p>
+
+                        {/* Fade após 2.8 segundos */}
+                        {setTimeout(() => {
+                            setScreen("menu");
+                        }, 2800)}
+                    </div>
+                );
+            }
+
+            // ==========================================================
+            // ======================= TELA MENU =========================
+            // ==========================================================
+
+            if (screen === "menu") {
+                return (
+                    <div className="min-h-screen iris-in bg-gradient-to-b from-blue-400 via-blue-300 to-green-400 p-8">
+
+                        {/* Assistente neutro no menu */}
+                        {updateMood("neutral")}
+
+                        {/* BOTÃO DO SOM */}
+                        <button
+                            onClick={() => {
+                                if (!audioEnabled) enableAudio();
+                            }}
+                            className="fixed top-6 right-6 bg-yellow-400 border-4 border-yellow-700 text-black p-4 rounded-full shadow-xl pixel-font"
+                        >
+                            🔊
+                        </button>
+
+                        <div className="max-w-4xl mx-auto">
+                            <h1
+                                className="text-5xl md:text-6xl text-center text-yellow-300 font-bold pixel-font mb-10"
+                                style={{ textShadow: "6px 6px 0px rgba(0,0,0,0.5)" }}
+                            >
+                                QUIZ DO CONHECIMENTO
+                            </h1>
+
+                            <div className="space-y-6">
+
+                                <button
+                                    onClick={() => setScreen("config")}
+                                    className="w-full bg-gradient-to-r from-orange-500 to-orange-600 border-4 border-orange-800 text-white font-bold pixel-font py-6 px-8 rounded-lg shadow-xl hover:scale-105 transition-all text-xl md:text-2xl"
+                                >
+                                    ⭐ INICIAR JOGO
+                                </button>
+
+                                <button
+                                    onClick={() => setScreen("ranking")}
+                                    className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 border-4 border-yellow-800 text-white font-bold pixel-font py-6 px-8 rounded-lg shadow-xl hover:scale-105 transition-all text-xl md:text-2xl"
+                                >
+                                    🏆 VER RANKING
+                                </button>
+
+                            </div>
+
+                            {/* Mascote animado no menu */}
+                            <div className="mt-12 text-center">
+                                <img
+                                    src="assistente_0.png"
+                                    style={{
+                                        width: "140px",
+                                        animation: "walk 0.4s infinite steps(2)",
+                                        imageRendering: "pixelated"
+                                    }}
+                                />
+                            </div>
+
+                            <div className="mt-8 h-16 bg-gradient-to-b from-green-600 to-green-800 border-t-4 border-green-900"></div>
+                        </div>
+                    </div>
+                );
+            }
+            // ==========================================================
+            // ======================= TELA CONFIG =======================
+            // ==========================================================
+
+            const [player1Name, setPlayer1Name] = useState("Mario");
+            const [player2Name, setPlayer2Name] = useState("Luigi");
+            const [gameMode, setGameMode] = useState("1P");
+            const [subject, setSubject] = useState("Português");
+            const [grade, setGrade] = useState("7º ano");
+            const [topic, setTopic] = useState("Verbos");
+            const [difficulty, setDifficulty] = useState("Fácil");
+
+            if (screen === "config") {
+                updateMood("neutral");
+
+                return (
+                    <div className="min-h-screen iris-in bg-gradient-to-b from-blue-400 to-green-400 p-8">
+                        
+                        {/* Botão de som */}
+                        <button
+                            onClick={() => enableAudio()}
+                            className="fixed top-6 right-6 bg-yellow-400 border-4 border-yellow-700 text-black p-4 rounded-full shadow-xl pixel-font"
+                        >
+                            🔊
+                        </button>
+
+                        <div className="max-w-3xl mx-auto bg-white border-8 border-gray-800 rounded-lg p-8 shadow-2xl">
+
+                            <h2 className="text-3xl pixel-font text-center mb-6 text-red-600">
+                                ⚙️ CONFIGURAÇÕES
+                            </h2>
+
+                            {/* SELEÇÃO DO MODO */}
+                            <div className="mb-6">
+                                <label className="block text-lg pixel-font mb-2">Modo de Jogo:</label>
+
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={() => setGameMode("1P")}
+                                        className={`flex-1 py-4 rounded-lg border-4 font-bold pixel-font 
+                                            ${gameMode === "1P" ? "bg-red-500 text-white border-red-700" : "bg-gray-200"}`}
+                                    >
+                                        👤 1 Jogador
+                                    </button>
+
+                                    <button
+                                        onClick={() => setGameMode("2P")}
+                                        className={`flex-1 py-4 rounded-lg border-4 font-bold pixel-font 
+                                            ${gameMode === "2P" ? "bg-green-500 text-white border-green-700" : "bg-gray-200"}`}
+                                    >
+                                        👥 2 Jogadores
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* CAMPOS */}
+                            <div className="space-y-4 mb-6">
+                                <input 
+                                    type="text"
+                                    className="w-full px-4 py-3 border-4 border-gray-600 rounded-lg text-lg font-bold"
+                                    value={player1Name}
+                                    onChange={(e) => setPlayer1Name(e.target.value)}
+                                    placeholder="Nome Jogador 1"
+                                />
+
+                                {gameMode === "2P" && (
+                                    <input 
+                                        type="text"
+                                        className="w-full px-4 py-3 border-4 border-gray-600 rounded-lg text-lg font-bold"
+                                        value={player2Name}
+                                        onChange={(e) => setPlayer2Name(e.target.value)}
+                                        placeholder="Nome Jogador 2"
+                                    />
+                                )}
+
+                                <input 
+                                    type="text"
+                                    className="w-full px-4 py-3 border-4 border-gray-600 rounded-lg text-lg"
+                                    value={subject}
+                                    onChange={(e) => setSubject(e.target.value)}
+                                    placeholder="📚 Disciplina"
+                                />
+
+                                <input 
+                                    type="text"
+                                    className="w-full px-4 py-3 border-4 border-gray-600 rounded-lg text-lg"
+                                    value={grade}
+                                    onChange={(e) => setGrade(e.target.value)}
+                                    placeholder="🎓 Série"
+                                />
+
+                                <input 
+                                    type="text"
+                                    className="w-full px-4 py-3 border-4 border-gray-600 rounded-lg text-lg"
+                                    value={topic}
+                                    onChange={(e) => setTopic(e.target.value)}
+                                    placeholder="📖 Conteúdo"
+                                />
+
+                                {/* DIFICULDADE */}
+                                <div>
+                                    <label className="block text-lg pixel-font mb-2">Dificuldade:</label>
+
+                                    <div className="flex gap-3">
+                                        {["Fácil", "Médio", "Difícil"].map(d => (
+                                            <button
+                                                key={d}
+                                                onClick={() => setDifficulty(d)}
+                                                className={`flex-1 py-3 rounded-lg border-4 font-bold pixel-font
+                                                    ${difficulty === d ? "bg-blue-500 text-white border-blue-700" : "bg-gray-200"}`}
+                                            >
+                                                {d}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* BOTÕES */}
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setScreen("menu")}
+                                    className="flex-1 bg-gray-500 text-white font-bold pixel-font py-4 rounded-lg text-xl"
+                                >
+                                    ← VOLTAR
+                                </button>
+
+                                <button
+                                    onClick={() => setScreen("loading")}
+                                    className="flex-1 bg-green-500 text-white font-bold pixel-font py-4 rounded-lg text-xl"
+                                >
+                                    COMEÇAR →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ==========================================================
+            // ===================== TELA LOADING =======================
+            // ==========================================================
+
+            const [loadingDots, setLoadingDots] = useState(0);
+
+            useEffect(() => {
+                if (screen === "loading") {
+                    updateMood("neutral");
+
+                    const int = setInterval(() => {
+                        setLoadingDots(prev => (prev + 1) % 4);
+                    }, 400);
+
+                    return () => clearInterval(int);
+                }
+            }, [screen]);
+
+            if (screen === "loading") {
+                return (
+                    <div className="min-h-screen bg-gradient-to-b from-blue-400 to-blue-600 flex items-center justify-center">
+                        <div className="text-center">
+
+                            <img
+                                src="assistente_0.png"
+                                style={{
+                                    width: "150px",
+                                    animation: "walk 0.4s infinite steps(2)",
+                                    imageRendering: "pixelated"
+                                }}
+                                className="mx-auto mb-6"
+                            />
+
+                            <h2 className="text-3xl pixel-font text-white">
+                                Gerando pergunta{".".repeat(loadingDots)}
+                            </h2>
+
+                            {/* Simulação de espera */}
+                            {setTimeout(() => {
+                                setScreen("question");
+                            }, 1800)}
+                        </div>
+                    </div>
+                );
+            }
+            // ==========================================================
+            // ===================== TELA DE PERGUNTA ====================
+            // ==========================================================
+
             const [question, setQuestion] = useState(null);
             const [selected, setSelected] = useState(null);
             const [score, setScore] = useState(0);
             const [lives, setLives] = useState(3);
+            const [runnerX, setRunnerX] = useState(5);
 
-            const [marioX, setMarioX] = useState(10);
-
-            // EXPRESSÃO DO ASSISTENTE
-            const [assistantMood, setAssistantMood] = useState("neutral");
-
-            // ======= Função para trocar expressão ========
-            const updateAssistantMood = (mood) => {
-                setAssistantMood(mood);
-                const img = document.getElementById("assistente-img");
-
-                if (mood === "neutral") img.src = "assistente_0.png";
-                if (mood === "happy") img.src = "assistente_1.png";
-                if (mood === "sad") img.src = "assistente_2.png";
-            };
-
-            // ======= GERAÇÃO DE PERGUNTA FAKE (sem API) ========
+            // Pergunta fixa (você pode depois trocar por IA)
             const loadQuestion = () => {
-                updateAssistantMood("neutral");
+                updateMood("neutral");
 
                 setQuestion({
                     pergunta: "Qual é o plural de 'coração'?",
@@ -102,85 +463,90 @@
                         D: "Coraçãoses"
                     },
                     correta: "A",
-                    explicacao: "O plural correto segue a regra de acrescentar '-ões'."
+                    explicacao: "O plural correto de 'coração' segue o padrão -ão → -ões."
                 });
 
                 setSelected(null);
             };
 
-            // ========= Ao iniciar =========
             useEffect(() => {
-                loadQuestion();
-            }, []);
+                if (screen === "question") {
+                    loadQuestion();
+                }
+            }, [screen]);
 
-            // ========= Conferir resposta =========
-            const check = () => {
+            // ===== POPUP DE EXPLICAÇÃO =====
+            const [showPopup, setShowPopup] = useState(false);
+
+            const togglePopup = () => {
+                setShowPopup(!showPopup);
+            };
+
+            // ===== CHECAR RESPOSTA =====
+            const checkAnswer = () => {
                 if (!selected) return alert("Escolha uma alternativa!");
 
                 if (selected === question.correta) {
+                    // ACERTOU
+                    updateMood("happy");
                     setScore(score + 10);
-                    updateAssistantMood("happy");
-                    setMarioX(marioX + 10);
+
+                    // movimento do corredor
+                    setRunnerX(runnerX + 10);
                 } else {
+                    // ERROU
+                    updateMood("sad");
                     setLives(lives - 1);
-                    updateAssistantMood("sad");
                 }
 
-                setTimeout(() => {
-                    if (lives - (selected !== question.correta ? 1 : 0) <= 0) {
-                        setScreen("gameover");
-                        return;
-                    }
-
-                    loadQuestion();
-                }, 1200);
+                // Mostra explicação
+                setShowPopup(true);
             };
 
-            // ========= TELAS =========
+            // ===== SE TERMINAR A EXPLICAÇÃO =====
+            const continueGame = () => {
+                setShowPopup(false);
 
-            if (screen === "menu") {
+                if (lives <= 0) {
+                    setScreen("gameover");
+                    return;
+                }
+
+                loadQuestion();
+            };
+
+            // ==========================================================
+            // ======================= TELA QUESTION =====================
+            // ==========================================================
+
+            if (screen === "question") {
                 return (
-                    <div className="min-h-screen flex flex-col items-center justify-center text-white">
-                        <h1 className="pixel-font text-4xl mb-8">QUIZ DO MARIO</h1>
+                    <div className="min-h-screen bg-blue-200 p-6">
 
-                        <button
-                            className="bg-red-500 px-8 py-4 rounded-lg text-2xl"
-                            onClick={() => setScreen("quiz")}
-                        >
-                            INICIAR
-                        </button>
-                    </div>
-                );
-            }
-
-            if (screen === "quiz") {
-
-                return (
-                    <div className="p-6 text-white">
-
-                        <div className="flex justify-between text-xl mb-4">
+                        {/* vidas e pontos */}
+                        <div className="flex justify-between text-xl mb-4 pixel-font">
                             <div>❤️ Vidas: {lives}</div>
                             <div>⭐ Pontos: {score}</div>
                         </div>
 
-                        {/* CORREDOR (substituído por assistente pixel) */}
-                        <div className="relative bg-blue-300 h-32 rounded-lg mb-4 overflow-hidden border-4 border-blue-700">
+                        {/* CORREDOR / PERSONAGEM ANDANDO */}
+                        <div className="relative bg-blue-400 h-32 rounded-lg mb-6 overflow-hidden border-4 border-blue-800">
 
                             <img
                                 src="assistente_0.png"
                                 style={{
-                                    width: "50px",
+                                    width: "60px",
                                     position: "absolute",
                                     bottom: "0px",
-                                    left: `${marioX}%`,
+                                    left: `${runnerX}%`,
                                     imageRendering: "pixelated",
-                                    animation: marioX < 85 ? "walk 0.4s steps(2) infinite" : "none"
+                                    animation: "walk 0.35s infinite steps(2)"
                                 }}
                             />
                         </div>
 
                         {/* PERGUNTA */}
-                        <div className="bg-yellow-400 border-8 border-yellow-700 rounded-lg p-4 mb-4 text-black">
+                        <div className="bg-yellow-300 border-8 border-yellow-600 rounded-lg p-4 mb-4 text-black">
                             <h2 className="pixel-font text-2xl mb-2">PERGUNTA</h2>
                             <p className="text-xl">{question.pergunta}</p>
                         </div>
@@ -192,9 +558,11 @@
                                 <button
                                     key={key}
                                     onClick={() => setSelected(key)}
-                                    className={`w-full p-4 rounded-lg border-4 font-bold text-lg 
-                                    ${selected === key ? "bg-red-500 border-red-700 text-white"
-                                        : "bg-orange-400 border-orange-600 text-black"}`}
+                                    className={`w-full p-4 rounded-lg border-4 font-bold text-lg pixel-font
+                                    ${selected === key 
+                                        ? "bg-red-500 border-red-700 text-white"
+                                        : "bg-orange-400 border-orange-600 text-black"
+                                    }`}
                                 >
                                     {key}) {value}
                                 </button>
@@ -202,39 +570,113 @@
 
                         </div>
 
-                        {/* BOTÃO RESPOSTA */}
+                        {/* BOTÃO RESPONDER */}
                         <button
-                            onClick={check}
-                            className="w-full bg-green-500 text-black font-bold mt-6 py-4 rounded-lg text-2xl border-4 border-green-800"
+                            onClick={checkAnswer}
+                            className="w-full pixel-font bg-green-500 text-black font-bold mt-6 py-4 rounded-lg text-2xl border-4 border-green-800 hover:scale-105 transition-all"
                         >
                             RESPONDER
                         </button>
 
+                        {/* POPUP DE EXPLICAÇÃO */}
+                        {showPopup && (
+                            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-6">
+                                <div className="bg-white border-8 border-gray-800 rounded-lg p-8 max-w-lg text-center shadow-2xl">
+
+                                    <h2 className="text-3xl pixel-font mb-4">
+                                        {selected === question.correta ? "✔️ Acertou!" : "❌ Errou!"}
+                                    </h2>
+
+                                    <p className="text-lg mb-4">{question.explicacao}</p>
+
+                                    <button
+                                        onClick={continueGame}
+                                        className="w-full bg-blue-500 text-white pixel-font border-4 border-blue-800 py-4 text-xl rounded-lg hover:scale-105 transition-all"
+                                    >
+                                        CONTINUAR
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+            // ==========================================================
+            // ======================= GAME OVER =========================
+            // ==========================================================
+
+            if (screen === "gameover") {
+                updateMood("sad");
+
+                return (
+                    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center iris-in">
+
+                        <h1 className="pixel-font text-5xl mb-6 text-red-500">
+                            GAME OVER
+                        </h1>
+
+                        <p className="text-3xl pixel-font mb-4">
+                            Pontuação final: {score}
+                        </p>
+
+                        <button
+                            onClick={() => {
+                                setScore(0);
+                                setLives(3);
+                                setRunnerX(5);
+                                updateMood("neutral");
+                                setScreen("menu");
+                            }}
+                            className="mt-6 bg-green-500 text-black pixel-font px-10 py-5 text-2xl rounded-lg border-4 border-green-800 hover:scale-110 transition-all"
+                        >
+                            VOLTAR AO MENU
+                        </button>
                     </div>
                 );
             }
 
-            if (screen === "gameover") {
+            // ==========================================================
+            // ========================= RANKING =========================
+            // ==========================================================
+
+            const rankingList = [
+                { nome: "Mario", pontos: 70 },
+                { nome: "Luigi", pontos: 50 },
+                { nome: "Peach", pontos: 40 },
+                { nome: "Toad", pontos: 20 }
+            ];
+
+            if (screen === "ranking") {
+                updateMood("neutral");
+
                 return (
-                    <div className="min-h-screen flex flex-col items-center justify-center text-white">
+                    <div className="min-h-screen iris-in bg-gradient-to-b from-yellow-300 to-yellow-500 p-10">
 
-                        <h1 className="pixel-font text-4xl mb-4">GAME OVER</h1>
+                        <h1 className="pixel-font text-4xl text-center mb-8">
+                            🏆 RANKING
+                        </h1>
 
-                        <p className="text-3xl mb-6">Pontuação final: {score}</p>
+                        <div className="max-w-xl mx-auto bg-white border-8 border-gray-800 rounded-lg p-8 shadow-2xl">
 
-                        <button
-                            className="bg-green-500 px-8 py-4 rounded-lg text-2xl"
-                            onClick={() => {
-                                setLives(3);
-                                setScore(0);
-                                setMarioX(10);
-                                loadQuestion();
-                                setScreen("quiz");
-                            }}
-                        >
-                            JOGAR NOVAMENTE
-                        </button>
+                            <ul className="space-y-4 text-xl">
+                                {rankingList.map((p, i) => (
+                                    <li
+                                        key={i}
+                                        className="pixel-font bg-gray-200 border-4 border-gray-600 p-4 rounded-lg flex justify-between"
+                                    >
+                                        <span>{i + 1}. {p.nome}</span>
+                                        <span>{p.pontos} pts</span>
+                                    </li>
+                                ))}
+                            </ul>
 
+                            <button
+                                onClick={() => setScreen("menu")}
+                                className="w-full mt-8 bg-blue-500 text-white pixel-font border-4 border-blue-800 py-4 text-xl rounded-lg hover:scale-105 transition-all"
+                            >
+                                VOLTAR
+                            </button>
+                        </div>
                     </div>
                 );
             }
@@ -242,10 +684,14 @@
             return null;
         }
 
-        ReactDOM.createRoot(document.getElementById("root")).render(<MarioQuizGame />);
+        // ==========================================================
+        // =============== RENDERIZAÇÃO DO COMPONENTE ===============
+        // ==========================================================
+
+        ReactDOM.createRoot(document.getElementById("root"))
+            .render(<MarioQuizGame />);
 
     </script>
 
 </body>
-
 </html>
