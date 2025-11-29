@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mario Quiz - Marcel</title>
+    <title>Little Kid Quiz - Marcel</title>
 
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -79,55 +79,49 @@
             image-rendering: pixelated;
         }
     </style>
+
 </head>
 
 <body class="bg-black">
-
     <div id="root"></div>
 
-    <!-- ASSISTENTE LATERAL -->
+    <!-- Assistente Fixo -->
     <div id="assistente-container" class="assistente-fixo flex items-end justify-center">
-        <img id="assistente-img" src="assistente_0.png" style="width:130px;" />
+        <img id="assistente-img" src="idle.png" style="width:130px;" />
     </div>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        function MarioQuizGame() {
+        function App() {
 
-            // ESTADO PRINCIPAL DE TELA
+            // Estado geral de telas
             const [screen, setScreen] = useState("prestart");
 
-            // Estado do assistente
-            const [assistantMood, setAssistantMood] = useState("neutral");
+            // Assistente
+            const [assistantMood, setAssistantMood] = useState("idle");
 
-            // Memória de áudio
+            // Áudio
             const [audioEnabled, setAudioEnabled] = useState(false);
-
-            // Synth principal
             const synthRef = useRef(null);
 
-            // === Inicializar áudio ===
+            // Ativar áudio
             const enableAudio = async () => {
                 try {
                     await Tone.start();
-
                     if (!synthRef.current) {
                         synthRef.current = new Tone.Synth({
                             oscillator: { type: "square" },
                             envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 0.2 }
                         }).toDestination();
                     }
-
                     setAudioEnabled(true);
-                    console.log("Áudio destravado!");
-
                 } catch (e) {
-                    console.warn("Erro ao iniciar áudio", e);
+                    console.warn("Erro ao iniciar áudio:", e);
                 }
             };
 
-            // === Som de moeda ===
+            // Som moeda
             const playCoin = () => {
                 if (!audioEnabled || !synthRef.current) return;
                 const now = Tone.now();
@@ -135,20 +129,19 @@
                 synthRef.current.triggerAttackRelease("E6", "0.15", now + 0.05);
             };
 
-            // === Trocar expressão do assistente ===
+            // Trocar humor do assistente
             const updateMood = (m) => {
                 setAssistantMood(m);
                 const img = document.getElementById("assistente-img");
 
-                if (m === "neutral") img.src = "assistente_0.png";
-                if (m === "happy") img.src = "assistente_1.png";
-                if (m === "sad") img.src = "assistente_2.png";
+                if (m === "idle") img.src = "idle.png";
+                if (m === "happy") img.src = "happy.png";
+                if (m === "sad") img.src = "sad.png";
             };
 
-            // ==========================================================
-            // ====================   TELA PRESTART   ====================
-            // ==========================================================
-
+            // =============================================================
+            //                        TELA PRESTART
+            // =============================================================
             if (screen === "prestart") {
                 return (
                     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center iris-in">
@@ -160,9 +153,7 @@
                             onClick={async () => {
                                 await enableAudio();
                                 playCoin();
-
-                                updateMood("neutral");
-
+                                updateMood("idle");
                                 setScreen("splash");
                             }}
                             className="bg-white text-black font-bold px-10 py-5 rounded-lg text-2xl border-4 border-gray-400 hover:scale-110 transition-all pixel-font"
@@ -172,52 +163,46 @@
                     </div>
                 );
             }
-            // ==========================================================
-            // ======================= TELA SPLASH =======================
-            // ==========================================================
 
+            // =============================================================
+            //                            SPLASH
+            // =============================================================
             if (screen === "splash") {
+
+                useEffect(() => {
+                    const t = setTimeout(() => setScreen("menu"), 2600);
+                    return () => clearTimeout(t);
+                }, []);
+
                 return (
                     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center iris-out">
-                        <h1 className="pixel-font text-5xl mb-4">
-                            MARCEL DANCINI
-                        </h1>
-                        <p className="pixel-font text-2xl mt-4">Presents</p>
-
-                        {/* Fade após 2.8 segundos */}
-                        {setTimeout(() => {
-                            setScreen("menu");
-                        }, 2800)}
+                        <h1 className="pixel-font text-5xl mb-4">MARCEL DANCINI</h1>
+                        <p className="pixel-font text-2xl">Presents</p>
                     </div>
                 );
             }
 
-            // ==========================================================
-            // ======================= TELA MENU =========================
-            // ==========================================================
-
+            // =============================================================
+            //                              MENU
+            // =============================================================
             if (screen === "menu") {
+                updateMood("idle");
+
                 return (
                     <div className="min-h-screen iris-in bg-gradient-to-b from-blue-400 via-blue-300 to-green-400 p-8">
 
-                        {/* Assistente neutro no menu */}
-                        {updateMood("neutral")}
-
-                        {/* BOTÃO DO SOM */}
+                        {/* Botão som */}
                         <button
-                            onClick={() => {
-                                if (!audioEnabled) enableAudio();
-                            }}
+                            onClick={() => enableAudio()}
                             className="fixed top-6 right-6 bg-yellow-400 border-4 border-yellow-700 text-black p-4 rounded-full shadow-xl pixel-font"
                         >
                             🔊
                         </button>
 
                         <div className="max-w-4xl mx-auto">
-                            <h1
-                                className="text-5xl md:text-6xl text-center text-yellow-300 font-bold pixel-font mb-10"
-                                style={{ textShadow: "6px 6px 0px rgba(0,0,0,0.5)" }}
-                            >
+
+                            <h1 className="text-5xl md:text-6xl text-center text-yellow-300 font-bold pixel-font mb-10"
+                                style={{ textShadow: "6px 6px 0px rgba(0,0,0,0.5)" }}>
                                 QUIZ DO CONHECIMENTO
                             </h1>
 
@@ -238,144 +223,53 @@
                                 </button>
 
                             </div>
-
-                            {/* Mascote animado no menu */}
-                            <div className="mt-12 text-center">
-                                <img
-                                    src="assistente_0.png"
-                                    style={{
-                                        width: "140px",
-                                        animation: "walk 0.4s infinite steps(2)",
-                                        imageRendering: "pixelated"
-                                    }}
-                                />
-                            </div>
-
-                            <div className="mt-8 h-16 bg-gradient-to-b from-green-600 to-green-800 border-t-4 border-green-900"></div>
                         </div>
                     </div>
                 );
             }
-            // ==========================================================
-            // ======================= TELA CONFIG =======================
-            // ==========================================================
 
-            const [player1Name, setPlayer1Name] = useState("Mario");
-            const [player2Name, setPlayer2Name] = useState("Luigi");
-            const [gameMode, setGameMode] = useState("1P");
-            const [subject, setSubject] = useState("Português");
-            const [grade, setGrade] = useState("7º ano");
-            const [topic, setTopic] = useState("Verbos");
+            // =============================================================
+            //                       CONFIGURAÇÕES
+            // =============================================================
+            const [player1Name, setPlayer1] = useState("Jogador");
             const [difficulty, setDifficulty] = useState("Fácil");
 
             if (screen === "config") {
-                updateMood("neutral");
+                updateMood("idle");
 
                 return (
                     <div className="min-h-screen iris-in bg-gradient-to-b from-blue-400 to-green-400 p-8">
-                        
-                        {/* Botão de som */}
-                        <button
-                            onClick={() => enableAudio()}
-                            className="fixed top-6 right-6 bg-yellow-400 border-4 border-yellow-700 text-black p-4 rounded-full shadow-xl pixel-font"
-                        >
-                            🔊
-                        </button>
 
                         <div className="max-w-3xl mx-auto bg-white border-8 border-gray-800 rounded-lg p-8 shadow-2xl">
 
-                            <h2 className="text-3xl pixel-font text-center mb-6 text-red-600">
+                            <h2 className="pixel-font text-3xl text-center mb-6 text-red-600">
                                 ⚙️ CONFIGURAÇÕES
                             </h2>
 
-                            {/* SELEÇÃO DO MODO */}
-                            <div className="mb-6">
-                                <label className="block text-lg pixel-font mb-2">Modo de Jogo:</label>
+                            <div className="space-y-6">
 
-                                <div className="flex gap-4">
-                                    <button
-                                        onClick={() => setGameMode("1P")}
-                                        className={`flex-1 py-4 rounded-lg border-4 font-bold pixel-font 
-                                            ${gameMode === "1P" ? "bg-red-500 text-white border-red-700" : "bg-gray-200"}`}
-                                    >
-                                        👤 1 Jogador
-                                    </button>
-
-                                    <button
-                                        onClick={() => setGameMode("2P")}
-                                        className={`flex-1 py-4 rounded-lg border-4 font-bold pixel-font 
-                                            ${gameMode === "2P" ? "bg-green-500 text-white border-green-700" : "bg-gray-200"}`}
-                                    >
-                                        👥 2 Jogadores
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* CAMPOS */}
-                            <div className="space-y-4 mb-6">
-                                <input 
-                                    type="text"
+                                <input type="text"
                                     className="w-full px-4 py-3 border-4 border-gray-600 rounded-lg text-lg font-bold"
                                     value={player1Name}
-                                    onChange={(e) => setPlayer1Name(e.target.value)}
-                                    placeholder="Nome Jogador 1"
+                                    onChange={(e) => setPlayer1(e.target.value)}
+                                    placeholder="Nome do Jogador"
                                 />
 
-                                {gameMode === "2P" && (
-                                    <input 
-                                        type="text"
-                                        className="w-full px-4 py-3 border-4 border-gray-600 rounded-lg text-lg font-bold"
-                                        value={player2Name}
-                                        onChange={(e) => setPlayer2Name(e.target.value)}
-                                        placeholder="Nome Jogador 2"
-                                    />
-                                )}
-
-                                <input 
-                                    type="text"
-                                    className="w-full px-4 py-3 border-4 border-gray-600 rounded-lg text-lg"
-                                    value={subject}
-                                    onChange={(e) => setSubject(e.target.value)}
-                                    placeholder="📚 Disciplina"
-                                />
-
-                                <input 
-                                    type="text"
-                                    className="w-full px-4 py-3 border-4 border-gray-600 rounded-lg text-lg"
-                                    value={grade}
-                                    onChange={(e) => setGrade(e.target.value)}
-                                    placeholder="🎓 Série"
-                                />
-
-                                <input 
-                                    type="text"
-                                    className="w-full px-4 py-3 border-4 border-gray-600 rounded-lg text-lg"
-                                    value={topic}
-                                    onChange={(e) => setTopic(e.target.value)}
-                                    placeholder="📖 Conteúdo"
-                                />
-
-                                {/* DIFICULDADE */}
-                                <div>
-                                    <label className="block text-lg pixel-font mb-2">Dificuldade:</label>
-
-                                    <div className="flex gap-3">
-                                        {["Fácil", "Médio", "Difícil"].map(d => (
-                                            <button
-                                                key={d}
-                                                onClick={() => setDifficulty(d)}
-                                                className={`flex-1 py-3 rounded-lg border-4 font-bold pixel-font
-                                                    ${difficulty === d ? "bg-blue-500 text-white border-blue-700" : "bg-gray-200"}`}
-                                            >
-                                                {d}
-                                            </button>
-                                        ))}
-                                    </div>
+                                <label className="pixel-font text-lg">Dificuldade:</label>
+                                <div className="flex gap-3">
+                                    {["Fácil", "Médio", "Difícil"].map(d => (
+                                        <button key={d}
+                                            onClick={() => setDifficulty(d)}
+                                            className={`flex-1 py-3 rounded-lg border-4 font-bold pixel-font
+                                                ${difficulty === d ? "bg-blue-500 text-white" : "bg-gray-200"}`}>
+                                            {d}
+                                        </button>
+                                    ))}
                                 </div>
+
                             </div>
 
-                            {/* BOTÕES */}
-                            <div className="flex gap-4">
+                            <div className="flex gap-4 mt-6">
                                 <button
                                     onClick={() => setScreen("menu")}
                                     className="flex-1 bg-gray-500 text-white font-bold pixel-font py-4 rounded-lg text-xl"
@@ -395,64 +289,62 @@
                 );
             }
 
-            // ==========================================================
-            // ===================== TELA LOADING =======================
-            // ==========================================================
-
-            const [loadingDots, setLoadingDots] = useState(0);
-
-            useEffect(() => {
-                if (screen === "loading") {
-                    updateMood("neutral");
-
-                    const int = setInterval(() => {
-                        setLoadingDots(prev => (prev + 1) % 4);
-                    }, 400);
-
-                    return () => clearInterval(int);
-                }
-            }, [screen]);
+            // =============================================================
+            //                             LOADING
+            // =============================================================
+            const [dots, setDots] = useState(0);
 
             if (screen === "loading") {
+
+                useEffect(() => {
+                    updateMood("idle");
+
+                    const interval = setInterval(() => {
+                        setDots((d) => (d + 1) % 4);
+                    }, 400);
+
+                    const timeout = setTimeout(() => {
+                        setScreen("question");
+                    }, 2000);
+
+                    return () => {
+                        clearInterval(interval);
+                        clearTimeout(timeout);
+                    };
+                }, []);
+
                 return (
                     <div className="min-h-screen bg-gradient-to-b from-blue-400 to-blue-600 flex items-center justify-center">
                         <div className="text-center">
 
-                            <img
-                                src="assistente_0.png"
+                            <img src="idle.png"
+                                className="mx-auto mb-6"
                                 style={{
                                     width: "150px",
                                     animation: "walk 0.4s infinite steps(2)",
                                     imageRendering: "pixelated"
                                 }}
-                                className="mx-auto mb-6"
                             />
 
                             <h2 className="text-3xl pixel-font text-white">
-                                Gerando pergunta{".".repeat(loadingDots)}
+                                Gerando pergunta{".".repeat(dots)}
                             </h2>
-
-                            {/* Simulação de espera */}
-                            {setTimeout(() => {
-                                setScreen("question");
-                            }, 1800)}
                         </div>
                     </div>
                 );
             }
-            // ==========================================================
-            // ===================== TELA DE PERGUNTA ====================
-            // ==========================================================
 
+            // =============================================================
+            //                            QUESTION
+            // =============================================================
             const [question, setQuestion] = useState(null);
             const [selected, setSelected] = useState(null);
             const [score, setScore] = useState(0);
             const [lives, setLives] = useState(3);
-            const [runnerX, setRunnerX] = useState(5);
+            const [runX, setRunX] = useState(5);
 
-            // Pergunta fixa (você pode depois trocar por IA)
             const loadQuestion = () => {
-                updateMood("neutral");
+                updateMood("idle");
 
                 setQuestion({
                     pergunta: "Qual é o plural de 'coração'?",
@@ -460,12 +352,11 @@
                         A: "Corações",
                         B: "Coraçãos",
                         C: "Coraçõesz",
-                        D: "Coraçãoses"
+                        D: "Coraçãoses",
                     },
                     correta: "A",
-                    explicacao: "O plural correto de 'coração' segue o padrão -ão → -ões."
+                    explicacao: "O plural de 'coração' segue a regra: -ão → -ões.",
                 });
-
                 setSelected(null);
             };
 
@@ -475,35 +366,24 @@
                 }
             }, [screen]);
 
-            // ===== POPUP DE EXPLICAÇÃO =====
             const [showPopup, setShowPopup] = useState(false);
 
-            const togglePopup = () => {
-                setShowPopup(!showPopup);
-            };
-
-            // ===== CHECAR RESPOSTA =====
             const checkAnswer = () => {
                 if (!selected) return alert("Escolha uma alternativa!");
 
                 if (selected === question.correta) {
-                    // ACERTOU
                     updateMood("happy");
+                    playCoin();
                     setScore(score + 10);
-
-                    // movimento do corredor
-                    setRunnerX(runnerX + 10);
+                    setRunX(runX + 10);
                 } else {
-                    // ERROU
                     updateMood("sad");
                     setLives(lives - 1);
                 }
 
-                // Mostra explicação
                 setShowPopup(true);
             };
 
-            // ===== SE TERMINAR A EXPLICAÇÃO =====
             const continueGame = () => {
                 setShowPopup(false);
 
@@ -515,62 +395,46 @@
                 loadQuestion();
             };
 
-            // ==========================================================
-            // ======================= TELA QUESTION =====================
-            // ==========================================================
-
-            if (screen === "question") {
+            if (screen === "question" && question) {
                 return (
                     <div className="min-h-screen bg-blue-200 p-6">
 
-                        {/* vidas e pontos */}
                         <div className="flex justify-between text-xl mb-4 pixel-font">
                             <div>❤️ Vidas: {lives}</div>
                             <div>⭐ Pontos: {score}</div>
                         </div>
 
-                        {/* CORREDOR / PERSONAGEM ANDANDO */}
                         <div className="relative bg-blue-400 h-32 rounded-lg mb-6 overflow-hidden border-4 border-blue-800">
-
-                            <img
-                                src="assistente_0.png"
+                            <img src={assistantMood === "happy" ? "happy.png" :
+                                assistantMood === "sad" ? "sad.png" : "idle.png"}
                                 style={{
                                     width: "60px",
                                     position: "absolute",
-                                    bottom: "0px",
-                                    left: `${runnerX}%`,
+                                    bottom: 0,
+                                    left: `${runX}%`,
                                     imageRendering: "pixelated",
                                     animation: "walk 0.35s infinite steps(2)"
                                 }}
                             />
                         </div>
 
-                        {/* PERGUNTA */}
                         <div className="bg-yellow-300 border-8 border-yellow-600 rounded-lg p-4 mb-4 text-black">
                             <h2 className="pixel-font text-2xl mb-2">PERGUNTA</h2>
                             <p className="text-xl">{question.pergunta}</p>
                         </div>
 
-                        {/* ALTERNATIVAS */}
                         <div className="space-y-3">
-
                             {Object.entries(question.alternativas).map(([key, value]) => (
-                                <button
-                                    key={key}
+                                <button key={key}
                                     onClick={() => setSelected(key)}
                                     className={`w-full p-4 rounded-lg border-4 font-bold text-lg pixel-font
-                                    ${selected === key 
-                                        ? "bg-red-500 border-red-700 text-white"
-                                        : "bg-orange-400 border-orange-600 text-black"
-                                    }`}
-                                >
+                                        ${selected === key ? "bg-red-500 border-red-700 text-white"
+                                            : "bg-orange-400 border-orange-600 text-black"}`}>
                                     {key}) {value}
                                 </button>
                             ))}
-
                         </div>
 
-                        {/* BOTÃO RESPONDER */}
                         <button
                             onClick={checkAnswer}
                             className="w-full pixel-font bg-green-500 text-black font-bold mt-6 py-4 rounded-lg text-2xl border-4 border-green-800 hover:scale-105 transition-all"
@@ -578,11 +442,9 @@
                             RESPONDER
                         </button>
 
-                        {/* POPUP DE EXPLICAÇÃO */}
                         {showPopup && (
                             <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-6">
                                 <div className="bg-white border-8 border-gray-800 rounded-lg p-8 max-w-lg text-center shadow-2xl">
-
                                     <h2 className="text-3xl pixel-font mb-4">
                                         {selected === question.correta ? "✔️ Acertou!" : "❌ Errou!"}
                                     </h2>
@@ -601,10 +463,10 @@
                     </div>
                 );
             }
-            // ==========================================================
-            // ======================= GAME OVER =========================
-            // ==========================================================
 
+            // =============================================================
+            //                             GAME OVER
+            // =============================================================
             if (screen === "gameover") {
                 updateMood("sad");
 
@@ -623,8 +485,8 @@
                             onClick={() => {
                                 setScore(0);
                                 setLives(3);
-                                setRunnerX(5);
-                                updateMood("neutral");
+                                setRunX(5);
+                                updateMood("idle");
                                 setScreen("menu");
                             }}
                             className="mt-6 bg-green-500 text-black pixel-font px-10 py-5 text-2xl rounded-lg border-4 border-green-800 hover:scale-110 transition-all"
@@ -635,10 +497,9 @@
                 );
             }
 
-            // ==========================================================
-            // ========================= RANKING =========================
-            // ==========================================================
-
+            // =============================================================
+            //                             RANKING
+            // =============================================================
             const rankingList = [
                 { nome: "Mario", pontos: 70 },
                 { nome: "Luigi", pontos: 50 },
@@ -647,7 +508,7 @@
             ];
 
             if (screen === "ranking") {
-                updateMood("neutral");
+                updateMood("idle");
 
                 return (
                     <div className="min-h-screen iris-in bg-gradient-to-b from-yellow-300 to-yellow-500 p-10">
@@ -660,10 +521,8 @@
 
                             <ul className="space-y-4 text-xl">
                                 {rankingList.map((p, i) => (
-                                    <li
-                                        key={i}
-                                        className="pixel-font bg-gray-200 border-4 border-gray-600 p-4 rounded-lg flex justify-between"
-                                    >
+                                    <li key={i}
+                                        className="pixel-font bg-gray-200 border-4 border-gray-600 p-4 rounded-lg flex justify-between">
                                         <span>{i + 1}. {p.nome}</span>
                                         <span>{p.pontos} pts</span>
                                     </li>
@@ -684,13 +543,7 @@
             return null;
         }
 
-        // ==========================================================
-        // =============== RENDERIZAÇÃO DO COMPONENTE ===============
-        // ==========================================================
-
-        ReactDOM.createRoot(document.getElementById("root"))
-            .render(<MarioQuizGame />);
-
+        ReactDOM.createRoot(document.getElementById("root")).render(<App />);
     </script>
 
 </body>
